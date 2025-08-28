@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "build": "echo 'no build step needed'",
-    "postinstall": "prisma generate"
+    "postinstall": "npx prisma generate && npx prisma db push"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
