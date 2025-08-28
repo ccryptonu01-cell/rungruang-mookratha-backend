@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  phone     String   @unique
+  password  String?
+  role      Role     @default(USER)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  resetToken     String?
+  resetTokenExp  DateTime?
+
+  reservations Reservation[]
+  orders       Order[]
+  orderHistory OrderHistory[]
+  cartItems    Cart[]
+}
+
+enum Role {
+  USER
+  ADMIN
+  CASHIER
+}
+
+model GuestUser {
+  id    Int    @id @default(autoincrement())
+  name  String
+  phone String
+
+  reservations Reservation[]
+}
+
+model Table {
+  id          Int         @id @default(autoincrement())
+  tableNumber Int         @unique
+  status      TableStatus @default(AVAILABLE)
+
+  reservations Reservation[]
+  orders       Order[]
+}
+
+enum TableStatus {
+  AVAILABLE
+  RESERVED
+  OCCUPIED
+}
+
+model Reservation {
+  id          Int               @id @default(autoincrement())
+  userId      Int?
+  guestUserId Int?
+  tableId     Int
+  time        DateTime          
+  status      ReservationStatus @default(PENDING)
+  people      Int?
+  orderId     Int?              @unique
+
+  order     Order?     @relation(fields: [orderId], references: [id])
+  user      User?      @relation(fields: [userId], references: [id])
+  guestUser GuestUser? @relation(fields: [guestUserId], references: [id])
+  table     Table      @relation(fields: [tableId], references: [id])
+}
+
+enum ReservationStatus {
+  PENDING
+  RESERVED
+  CONFIRMED
+  CANCELLED
+}
+
+model Order {
+  id          Int          @id @default(autoincrement())
+  userId      Int?
+  tableId     Int?
+  reservation Reservation? @relation
+
+  paymentStatus String?     @default("PENDING")
+  paymentMethod String?
+  slipUrl       String?
+  totalPrice    Decimal
+  status        OrderStatus @default(PENDING)
+  createdAt     DateTime    @default(now())
+
+  user         User?          @relation(fields: [userId], references: [id])
+  table        Table?         @relation(fields: [tableId], references: [id])
+  orderItems   OrderItem[]
+  orderHistory OrderHistory[]
+}
+
+enum OrderStatus {
+  PENDING // ยังไม่ชำระเงิน
+  COMPLETED // ชำระเงินแล้ว
+  CANCELLED // ยกเลิก
+}
+
+model OrderItem {
+  id       Int     @id @default(autoincrement())
+  orderId  Int
+  menuId   Int
+  quantity Int
+  price    Decimal
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menu  Menu  @relation(fields: [menuId], references: [id])
+}
+
+model OrderHistory {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  orderId    Int
+  order      Order    @relation(fields: [orderId], references: [id])
+  totalPrice Decimal
+  tableId    Int?
+  date       DateTime @default(now())
+
+  year          Int
+  month         Int
+  day           Int
+  paymentStatus String
+  paymentMethod String
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  menus Menu[]
+}
+
+model Menu {
+  id          Int      @id @default(autoincrement())
+  name        String
+  price       Decimal
+  image       String
+  publicId    String
+  status      String   @default("มีอยู่")
+  description String?
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
+  cartItems  Cart[]
+}
+
+model Inventory {
+  id        Int      @id @default(autoincrement())
+  itemName  String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  menuId    Int
+  tableId   Int?
+  quantity  Int
+  price     Decimal
+  total     Decimal
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  menu Menu @relation(fields: [menuId], references: [id])
+}
