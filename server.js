@@ -6,6 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { readdirSync } = require('fs');
 const path = require('path');
+const { subHours } = require('date-fns');
 
 const { checkBlacklistedToken } = require('./controllers/auth');
 
@@ -150,3 +151,25 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
+
+const cleanExpiredTokens = async () => {
+    const eightHoursAgo = subHours(new Date(), 8);
+
+    try {
+        const result = await prisma.tokenBlacklist.deleteMany({
+            where: {
+                createdAt: {
+                    lt: eightHoursAgo,
+                },
+            },
+        });
+
+        if (result.count > 0) {
+            console.log(`🧹 ลบ token blacklist ที่หมดอายุแล้ว ${result.count} รายการ`);
+        }
+    } catch (err) {
+        console.error("❌ ล้าง token blacklist ล้มเหลว:", err);
+    }
+};
+
+setInterval(cleanExpiredTokens, 6 * 60 * 60 * 1000);

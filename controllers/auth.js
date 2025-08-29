@@ -122,8 +122,9 @@ exports.logout = async (req, res) => {
             return res.status(400).json({ message: 'Invalid token format' });
         }
 
-        // เพิ่ม Token ไปที่ Blacklist
-        blacklistedTokens.add(token);
+        await prisma.tokenBlacklist.create({
+            data: { token }
+        });
 
         res.status(200).json({ message: 'ออกจากระบบสำเร็จ' });
     } catch (err) {
@@ -132,19 +133,34 @@ exports.logout = async (req, res) => {
     }
 }
 
-exports.checkBlacklistedToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
+exports.checkBlacklistedToken = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
 
-    if (!token || !validator.isJWT(token)) {
-        return res.status(401).json({ message: 'Token is invalid or expired' });
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ message: "ไม่ได้แนบ token มาด้วย" });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ message: "Token ไม่ถูกต้อง" });
+        }
+
+        const blacklisted = await prisma.tokenBlacklist.findUnique({
+            where: { token },
+        });
+
+        if (blacklisted) {
+            return res.status(403).json({ message: "Token ถูกยกเลิกแล้ว" });
+        }
+
+        next();
+    } catch (err) {
+        console.error("❌ checkBlacklistedToken error:", err);
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการตรวจสอบ token" });
     }
-
-    if (blacklistedTokens.has(token)) {
-        return res.status(401).json({ message: 'Token is invalid or expired' });
-    }
-
-    next();
-}
+};
 
 // Reset Password API
 exports.sendResetEmail = async (req, res) => {

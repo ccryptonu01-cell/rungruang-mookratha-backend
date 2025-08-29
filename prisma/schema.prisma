@@ -180,3 +180,8 @@ model Cart {
   user User @relation(fields: [userId], references: [id])
   menu Menu @relation(fields: [menuId], references: [id])
 }
+
+model TokenBlacklist {
+  token     String   @id
+  createdAt DateTime @default(now())
+}
