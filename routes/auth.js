@@ -7,11 +7,12 @@ const { verifyToken, verifyAdmin, verifyCashier } = require('../middleware/authM
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
     message: {
         message: 'พยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ในอีก 15 นาที'
     },
-    standardHeaders: true,
-    legacyHeaders: false,
+    keyGenerator: (req) => req.ip
 });
 
 router.post('/register', register);

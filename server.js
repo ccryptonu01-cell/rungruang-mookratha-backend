@@ -12,9 +12,11 @@ const { checkBlacklistedToken } = require('./controllers/auth');
 const logger = require('./utils/logger');
 
 const app = express();
+
+app.set('trust proxy', 1);
+
 const port = process.env.PORT || 5000;
 
-// ====== CONFIG สำหรับ Dev (ไม่มี Domain) ======
 const FRONTEND_DEV = "http://localhost:5173"; // React dev server
 const FRONTEND_PROD = [
     "https://rungruang-mookratha-frontend.vercel.app",
@@ -85,15 +87,29 @@ app.use(express.json());
 const ALLOWED_ORIGINS = [
     ...FRONTEND_PROD,
     FRONTEND_DEV,
-    API_DEV
+    API_DEV,
+    /\.vercel\.app$/
 ];
 
 app.use(cors({
-    origin: ALLOWED_ORIGINS,
-    credentials: true
+    origin(origin, cb) {
+        if (!origin) return cb(null, true);
+        const ok = ALLOWED_ORIGINS.some(o =>
+            o instanceof RegExp ? o.test(origin) : o === origin
+        );
+        cb(ok ? null : new Error("Not allowed by CORS"), ok);
+    },
+    credentials: true,
 }));
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/auth')) {
+        return next();
+    }
+    return checkBlacklistedToken(req, res, next);
+});
 
 // ===== Routes หลัก =====
 app.use('/api/auth', require('./routes/auth'));
@@ -122,13 +138,6 @@ app.use(express.static(staticRoot));
 
 app.get('*', (req, res) => {
     res.sendFile(path.join(staticRoot, 'index.html'));
-});
-
-app.use((req, res, next) => {
-    if (req.path.startsWith('/api/auth')) {
-        return next();
-    }
-    return checkBlacklistedToken(req, res, next);
 });
 
 // ===== Error Handler Logger =====
