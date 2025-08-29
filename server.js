@@ -16,7 +16,10 @@ const port = process.env.PORT || 5000;
 
 // ====== CONFIG สำหรับ Dev (ไม่มี Domain) ======
 const FRONTEND_DEV = "http://localhost:5173"; // React dev server
-const FRONTEND_PROD = "https://rungruang-mookratha-frontend.vercel.app";
+const FRONTEND_PROD = [
+    "https://rungruang-mookratha-frontend.vercel.app",
+    "https://rungruang-mookratha-frontend-avsvchbj7-rmkcs-projects.vercel.app"
+];
 const API_DEV = `http://localhost:${port}`;
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "dybgekx5y";
 const CLOUDINARY_RES = `https://res.cloudinary.com/${CLOUD_NAME}`;
@@ -78,7 +81,7 @@ app.use(morgan('combined', { stream: morganStream }));
 
 app.use(express.json());
 app.use(cors({
-    origin: [FRONTEND_DEV, API_DEV, FRONTEND_PROD],
+    origin: [FRONTEND_PROD, FRONTEND_DEV, API_DEV],
     credentials: true
 }));
 
