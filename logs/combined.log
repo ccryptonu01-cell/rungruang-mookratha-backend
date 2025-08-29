@@ -2064,3 +2064,7 @@
 [2025-08-28T04:32:45.296Z] INFO: ::1 - - [28/Aug/2025:04:32:45 +0000] "GET /api/g-category HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
 [2025-08-28T04:32:45.297Z] INFO: ::1 - - [28/Aug/2025:04:32:45 +0000] "GET /api/g-menu HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
 [2025-08-28T04:32:45.298Z] INFO: ::1 - - [28/Aug/2025:04:32:45 +0000] "GET /api/g-category HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+[2025-08-28T07:14:07.700Z] INFO: ::1 - - [28/Aug/2025:07:14:07 +0000] "POST /api/auth/login HTTP/1.1" 200 372 "-" "PostmanRuntime/7.45.0"
+[2025-08-28T07:14:57.292Z] INFO: ::1 - - [28/Aug/2025:07:14:57 +0000] "GET /api/tables HTTP/1.1" 200 2047 "-" "PostmanRuntime/7.45.0"
+[2025-08-28T07:21:29.741Z] INFO: ::1 - - [28/Aug/2025:07:21:29 +0000] "POST /api/auth/login HTTP/1.1" 200 372 "-" "PostmanRuntime/7.45.0"
+[2025-08-28T07:22:49.636Z] INFO: ::1 - - [28/Aug/2025:07:22:49 +0000] "GET /api/menu HTTP/1.1" 200 23205 "-" "PostmanRuntime/7.45.0"
