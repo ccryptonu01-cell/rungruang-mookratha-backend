@@ -19,7 +19,7 @@ const FRONTEND_DEV = "http://localhost:5173"; // React dev server
 const FRONTEND_PROD = [
     "https://rungruang-mookratha-frontend.vercel.app",
     "https://rungruang-mookratha-frontend-git-main-rrmks-projects.vercel.app",
-    "https://rungruang-mookratha-frontend-ebzodf7t9-rrmks-projects.vercel.app"
+    "https://rungruang-mookratha-frontend-i119610ti-rrmks-projects.vercel.app"
 ];
 const API_DEV = `http://localhost:${port}`;
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "dybgekx5y";
@@ -83,14 +83,14 @@ app.use(morgan('combined', { stream: morganStream }));
 app.use(express.json());
 
 const ALLOWED_ORIGINS = [
-  ...FRONTEND_PROD,
-  FRONTEND_DEV,
-  API_DEV
+    ...FRONTEND_PROD,
+    FRONTEND_DEV,
+    API_DEV
 ];
 
 app.use(cors({
-  origin: ALLOWED_ORIGINS,
-  credentials: true
+    origin: ALLOWED_ORIGINS,
+    credentials: true
 }));
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
