@@ -81,9 +81,16 @@ const morganStream = {
 app.use(morgan('combined', { stream: morganStream }));
 
 app.use(express.json());
+
+const ALLOWED_ORIGINS = [
+  ...FRONTEND_PROD,
+  FRONTEND_DEV,
+  API_DEV
+];
+
 app.use(cors({
-    origin: [FRONTEND_PROD, FRONTEND_DEV, API_DEV],
-    credentials: true
+  origin: ALLOWED_ORIGINS,
+  credentials: true
 }));
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
