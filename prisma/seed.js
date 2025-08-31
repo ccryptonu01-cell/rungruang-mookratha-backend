@@ -1,5 +1,5 @@
 require('dotenv').config({ path: '.env.production' });
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient, TableStatus } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
@@ -8,7 +8,7 @@ async function main() {
     for (let i = 1; i <= 30; i++) {
         tables.push({
             tableNumber: i,
-            status: "AVAILABLE",
+            status: TableStatus.AVAILABLE, // ✅ ใส่ enum ที่ import มา
         });
     }
 
