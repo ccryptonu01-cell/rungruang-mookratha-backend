@@ -44,8 +44,6 @@ exports.createMenu = async (req, res) => {
             return res.status(404).json({ message: "ไม่พบหมวดหมู่ที่เลือก" });
         }
 
-        console.log("🖼️ imageFile:", req.file);
-        console.log("📥 body:", req.body);
         // บันทึกเมนู
         const newMenu = await prisma.menu.create({
             data: {
@@ -69,19 +67,24 @@ exports.createMenu = async (req, res) => {
 
 exports.listMenu = async (req, res) => {
     try {
-        //ดึงรายการเมนูทั้งหมดจากฐานข้อมูล
-        const menus = await prisma.menu.findMany()
+        const menus = await prisma.menu.findMany({
+            include: { category: true },
+        });
 
         //ถ้าไม่มีเมนู ให้ส่งข้อความแจ้ง
         if (menus.length === 0) {
-            return res.status(404).json({ message: 'ไม่มีเมนูในระบบ' })
+            return res.status(404).json({ message: 'ไม่มีเมนูในระบบ' });
         }
 
-        res.status(200).json({ message: 'รายการเมนู', menus })
+        res.status(200).json({ message: 'รายการเมนู', menus });
 
     } catch (err) {
-        console.error('ListMenu Error:', err);
-        res.status(500).json({ message: 'Server Error' })
+        console.error('ListMenu Error:', err.message, err.stack); 
+
+        res.status(500).json({
+            message: 'Server Error',
+            error: err.message, 
+        });
     }
 }
 
