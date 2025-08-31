@@ -3,6 +3,7 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const { register, login, logout, sendResetEmail, resetPassword } = require('../controllers/auth');
 const { verifyToken, verifyAdmin, verifyCashier } = require('../middleware/authMiddleware');
+const { ipKeyGenerator } = require('express-rate-limit');
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -12,7 +13,7 @@ const loginLimiter = rateLimit({
     message: {
         message: 'พยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ในอีก 15 นาที'
     },
-    keyGenerator: (req) => req.ip
+    keyGenerator: ipKeyGenerator
 });
 
 router.post('/register', register);
