@@ -2068,3 +2068,5 @@
 [2025-08-28T07:14:57.292Z] INFO: ::1 - - [28/Aug/2025:07:14:57 +0000] "GET /api/tables HTTP/1.1" 200 2047 "-" "PostmanRuntime/7.45.0"
 [2025-08-28T07:21:29.741Z] INFO: ::1 - - [28/Aug/2025:07:21:29 +0000] "POST /api/auth/login HTTP/1.1" 200 372 "-" "PostmanRuntime/7.45.0"
 [2025-08-28T07:22:49.636Z] INFO: ::1 - - [28/Aug/2025:07:22:49 +0000] "GET /api/menu HTTP/1.1" 200 23205 "-" "PostmanRuntime/7.45.0"
+[2025-08-31T16:28:55.725Z] INFO: ::1 - - [31/Aug/2025:16:28:55 +0000] "GET /api/tables HTTP/1.1" 401 66 "-" "PostmanRuntime/7.45.0"
+[2025-08-31T16:37:51.891Z] INFO: ::1 - - [31/Aug/2025:16:37:51 +0000] "GET /api/tables HTTP/1.1" 401 66 "-" "PostmanRuntime/7.45.0"

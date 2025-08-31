@@ -22,7 +22,7 @@ const FRONTEND_DEV = "http://localhost:5173"; // React dev server
 const FRONTEND_PROD = [
     "https://rungruang-mookratha-frontend.vercel.app",
     "https://rungruang-mookratha-frontend-git-main-rrmks-projects.vercel.app",
-    "https://rungruang-mookratha-frontend-6vcvf11h6-rrmks-projects.vercel.app"
+    "https://rungruang-mookratha-frontend-lyrocpt5u-rrmks-projects.vercel.app"
 ];
 const API_DEV = `http://localhost:${port}`;
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "dybgekx5y";
@@ -106,26 +106,11 @@ app.use(cors({
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use((req, res, next) => {
-    const guestAllowedPaths = [
-        '/api/auth',
-        '/api/g-menu',
-        '/api/g-category',
-        '/api/reservations',
-        '/api/reservations/guest-check',
-        '/api/reservations/tables',
-    ];
-
-    const isGuestAllowed = guestAllowedPaths.some(path =>
-        req.path.startsWith(path)
-    );
-
-    if (isGuestAllowed) {
+    if (req.path.startsWith('/api/auth')) {
         return next();
     }
-
     return checkBlacklistedToken(req, res, next);
-})
-
+});
 
 // ===== Routes หลัก =====
 app.use('/api/auth', require('./routes/auth'));
@@ -143,9 +128,9 @@ app.use('/api', require('./routes/guest'))
 app.use('/api/reservations', require('./routes/tables'));
 app.use('/api', require('./routes/tables'));
 
-// โหลด routes อัตโนมัติ (ยกเว้น auth.js และ menu.js)
+// โหลด routes อัตโนมัติ (ยกเว้น auth.js)
 readdirSync('./routes').forEach((file) => {
-    if (file !== 'auth.js' && file !== 'menu.js') {
+    if (file !== 'auth.js') {
         const route = require(`./routes/${file}`);
         app.use('/api', route);
     }
