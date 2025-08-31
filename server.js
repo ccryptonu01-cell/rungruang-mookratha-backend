@@ -141,6 +141,7 @@ app.use('/api/admin', require('./routes/menu'));
 app.use('/api', require('./routes/menu'));
 app.use('/api', require('./routes/guest'))
 app.use('/api/reservations', require('./routes/tables'));
+app.use('/api', require('./routes/tables'));
 
 // โหลด routes อัตโนมัติ (ยกเว้น auth.js และ menu.js)
 readdirSync('./routes').forEach((file) => {
