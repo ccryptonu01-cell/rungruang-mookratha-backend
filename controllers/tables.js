@@ -14,13 +14,14 @@ exports.getTables = async (req, res) => {
         if (selectedTime) {
             const cleanTime = xss(selectedTime.trim());
 
-            const selected = dayjs(cleanTime);
-            if (!selected.isValid()) {
+            // ตรวจสอบว่าเป็นวันที่ ISO8601 ที่ถูกต้อง
+            if (!validator.isISO8601(cleanTime)) {
                 return res.status(400).json({ message: "เวลาไม่ถูกต้อง" });
             }
 
-            const before = selected.subtract(3, "hour").toDate();
-            const after = selected.add(3, "hour").toDate();
+            const selected = new Date(cleanTime);
+            const before = new Date(selected.getTime() - 3 * 60 * 60 * 1000);
+            const after = new Date(selected.getTime() + 3 * 60 * 60 * 1000);
 
             whereReservation = {
                 ...whereReservation,
