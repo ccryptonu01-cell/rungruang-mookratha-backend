@@ -8,12 +8,12 @@ const { ipKeyGenerator } = require('express-rate-limit');
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
+    keyGenerator: ipKeyGenerator,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
         message: 'พยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ในอีก 15 นาที'
     },
-    keyGenerator: ipKeyGenerator
 });
 
 router.post('/register', register);
