@@ -9,6 +9,8 @@ exports.getTables = async (req, res) => {
     try {
         const { selectedTime } = req.query;
 
+        console.error("🔍 selectedTime (raw):", selectedTime);
+
         let whereReservation = {
             status: { not: "CANCELLED" },
         };
@@ -16,14 +18,18 @@ exports.getTables = async (req, res) => {
         if (selectedTime) {
             const cleanTime = xss(selectedTime.trim());
 
-            const parsedDate = dayjs(cleanTime);
+            const parsedDate = dayjs.utc(cleanTime);
             if (!parsedDate.isValid()) {
+                console.error("🕒 parsedDate:", parsedDate.format());
                 return res.status(400).json({ message: "เวลาไม่ถูกต้อง" });
             }
 
             const selected = parsedDate.toDate();
             const before = new Date(selected.getTime() - 3 * 60 * 60 * 1000);
             const after = new Date(selected.getTime() + 3 * 60 * 60 * 1000);
+
+            console.warn("🧪 ตรวจ selectedTime:", selectedTime);
+            console.warn("🧪 parsedDate:", parsedDate.format());
 
             whereReservation = {
                 ...whereReservation,
