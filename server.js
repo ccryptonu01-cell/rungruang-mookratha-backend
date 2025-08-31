@@ -22,7 +22,7 @@ const FRONTEND_DEV = "http://localhost:5173"; // React dev server
 const FRONTEND_PROD = [
     "https://rungruang-mookratha-frontend.vercel.app",
     "https://rungruang-mookratha-frontend-git-main-rrmks-projects.vercel.app",
-    "https://rungruang-mookratha-frontend-6096e0w4u-rrmks-projects.vercel.app"
+    "https://rungruang-mookratha-frontend-npzbwuk4f-rrmks-projects.vercel.app"
 ];
 const API_DEV = `http://localhost:${port}`;
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "dybgekx5y";
@@ -106,11 +106,15 @@ app.use(cors({
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use((req, res, next) => {
-    if (req.path.startsWith('/api/auth')) {
+    if (
+        req.path.startsWith('/api/auth') ||
+        req.path.startsWith('/api/tables')
+    ) {
         return next();
     }
     return checkBlacklistedToken(req, res, next);
 });
+
 
 // ===== Routes หลัก =====
 app.use('/api/auth', require('./routes/auth'));
