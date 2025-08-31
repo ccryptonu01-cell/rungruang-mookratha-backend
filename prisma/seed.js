@@ -1,4 +1,7 @@
-require('dotenv').config({ path: '.env.production' });
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env.production') });
+console.log("✅ DATABASE_URL =", process.env.DATABASE_URL);
+
 const { PrismaClient, TableStatus } = require('@prisma/client');
 const prisma = new PrismaClient();
 
