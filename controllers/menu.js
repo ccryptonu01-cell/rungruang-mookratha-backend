@@ -67,18 +67,19 @@ exports.createMenu = async (req, res) => {
 
 exports.listMenu = async (req, res) => {
     try {
-        const menus = await prisma.menu.findMany();
+        const menus = await prisma.menu.findMany()
+
         if (menus.length === 0) {
-            return res.status(404).json({ message: 'ไม่มีเมนูในระบบ' });
+            return res.status(404).json({ message: 'ไม่มีเมนูในระบบ' })
         }
 
-        res.status(200).json({ message: 'รายการเมนู', menus });
+        res.status(200).json({ message: 'รายการเมนู', menus })
 
     } catch (err) {
-        console.error('❌ ListMenu Error:', err); // <-- เพิ่มตรงนี้
-        res.status(500).json({ message: 'Server Error', error: err.message }); // <-- ส่งข้อความออกด้วย
+        console.error('ListMenu Error:', err);
+        res.status(500).json({ message: 'Server Error' })
     }
-};
+}
 
 exports.updateMenu = async (req, res) => {
     try {
