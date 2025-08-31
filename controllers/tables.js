@@ -1,7 +1,9 @@
 const prisma = require('../config/prisma');
 const dayjs = require('dayjs');
+const utc = require("dayjs/plugin/utc");
 const xss = require('xss');
 const validator = require('validator');
+dayjs.extend(utc);
 
 exports.getTables = async (req, res) => {
     try {
@@ -14,12 +16,12 @@ exports.getTables = async (req, res) => {
         if (selectedTime) {
             const cleanTime = xss(selectedTime.trim());
 
-            const parsedDate = new Date(cleanTime);
-            if (isNaN(parsedDate.getTime())) {
+            const parsedDate = dayjs(cleanTime);
+            if (!parsedDate.isValid()) {
                 return res.status(400).json({ message: "เวลาไม่ถูกต้อง" });
             }
 
-            const selected = new Date(cleanTime);
+            const selected = parsedDate.toDate();
             const before = new Date(selected.getTime() - 3 * 60 * 60 * 1000);
             const after = new Date(selected.getTime() + 3 * 60 * 60 * 1000);
 
