@@ -122,10 +122,11 @@ const changePasswordRoutes = require('./routes/admin');
 app.use('/api/admin', changePasswordRoutes);
 app.use('/api/user', changePasswordRoutes);
 app.use('/api/cashier', changePasswordRoutes);
+app.use('/api/admin', require('./routes/menu'));
 
-// โหลด routes อัตโนมัติ (ยกเว้น auth.js)
+// โหลด routes อัตโนมัติ (ยกเว้น auth.js และ menu.js)
 readdirSync('./routes').forEach((file) => {
-    if (file !== 'auth.js') {
+    if (file !== 'auth.js' && file !== 'menu.js') {
         const route = require(`./routes/${file}`);
         app.use('/api', route);
     }
