@@ -106,11 +106,26 @@ app.use(cors({
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use((req, res, next) => {
-    if (req.path.startsWith('/api/auth')) {
+    const guestAllowedPaths = [
+        '/api/auth',
+        '/api/g-menu',
+        '/api/g-category',
+        '/api/reservations',
+        '/api/reservations/guest-check',
+        '/api/reservations/tables',
+    ];
+
+    const isGuestAllowed = guestAllowedPaths.some(path =>
+        req.path.startsWith(path)
+    );
+
+    if (isGuestAllowed) {
         return next();
     }
+
     return checkBlacklistedToken(req, res, next);
-});
+})
+
 
 // ===== Routes หลัก =====
 app.use('/api/auth', require('./routes/auth'));
@@ -123,6 +138,7 @@ app.use('/api/admin', changePasswordRoutes);
 app.use('/api/user', changePasswordRoutes);
 app.use('/api/cashier', changePasswordRoutes);
 app.use('/api/admin', require('./routes/menu'));
+app.use('/api', require('./routes/guest'))
 
 // โหลด routes อัตโนมัติ (ยกเว้น auth.js และ menu.js)
 readdirSync('./routes').forEach((file) => {
