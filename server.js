@@ -22,7 +22,7 @@ const FRONTEND_DEV = "http://localhost:5173"; // React dev server
 const FRONTEND_PROD = [
     "https://rungruang-mookratha-frontend.vercel.app",
     "https://rungruang-mookratha-frontend-git-main-rrmks-projects.vercel.app",
-    "https://rungruang-mookratha-frontend-fdchzh98f-rrmks-projects.vercel.app"
+    "https://rungruang-mookratha-frontend-rcy6r0hcx-rrmks-projects.vercel.app"
 ];
 const API_DEV = `http://localhost:${port}`;
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "dybgekx5y";
@@ -140,6 +140,7 @@ app.use('/api/cashier', changePasswordRoutes);
 app.use('/api/admin', require('./routes/menu'));
 app.use('/api', require('./routes/menu'));
 app.use('/api', require('./routes/guest'))
+app.use('/api/reservations', require('./routes/tables'));
 
 // โหลด routes อัตโนมัติ (ยกเว้น auth.js และ menu.js)
 readdirSync('./routes').forEach((file) => {
