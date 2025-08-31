@@ -14,7 +14,6 @@ exports.getTables = async (req, res) => {
         if (selectedTime) {
             const cleanTime = xss(selectedTime.trim());
 
-            // ตรวจสอบว่าเป็นวันที่ ISO8601 ที่ถูกต้อง
             if (!validator.isISO8601(cleanTime)) {
                 return res.status(400).json({ message: "เวลาไม่ถูกต้อง" });
             }
@@ -36,7 +35,6 @@ exports.getTables = async (req, res) => {
             select: {
                 id: true,
                 tableNumber: true,
-                status: true,
                 reservations: {
                     where: whereReservation,
                     select: {
@@ -47,7 +45,16 @@ exports.getTables = async (req, res) => {
             },
         });
 
-        res.status(200).json({ message: "รายการโต๊ะทั้งหมด", tables });
+        const result = tables.map((table) => {
+            const hasActiveReservation = table.reservations.length > 0;
+            return {
+                id: table.id,
+                tableNumber: table.tableNumber,
+                status: hasActiveReservation ? "RESERVED" : "AVAILABLE",
+            };
+        });
+
+        res.status(200).json({ message: "รายการโต๊ะทั้งหมด", tables: result });
 
     } catch (error) {
         console.error("❌ Get Tables Error:", error);
