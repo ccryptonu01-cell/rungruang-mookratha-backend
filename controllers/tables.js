@@ -14,8 +14,8 @@ exports.getTables = async (req, res) => {
         if (selectedTime) {
             const cleanTime = xss(selectedTime.trim());
 
-            // ตรวจสอบว่าเป็นวันที่ ISO8601 ที่ถูกต้อง
-            if (!validator.isISO8601(cleanTime)) {
+            const parsedDate = new Date(cleanTime);
+            if (isNaN(parsedDate.getTime())) {
                 return res.status(400).json({ message: "เวลาไม่ถูกต้อง" });
             }
 
