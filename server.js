@@ -108,13 +108,13 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use((req, res, next) => {
     if (
         req.path.startsWith('/api/auth') ||
-        req.path.startsWith('/api/tables')
+        req.path.startsWith('/api/tables') ||
+        req.path.startsWith('/api/guest') // ✅ เพิ่มบรรทัดนี้
     ) {
         return next();
     }
     return checkBlacklistedToken(req, res, next);
 });
-
 
 // ===== Routes หลัก =====
 app.use('/api/auth', require('./routes/auth'));
