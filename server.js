@@ -129,7 +129,7 @@ app.use('/api/admin', changePasswordRoutes);
 app.use('/api/user', changePasswordRoutes);
 app.use('/api/cashier', changePasswordRoutes);
 app.use('/api/admin', require('./routes/menu'));
-app.use('/api', require('./routes/menu'));
+
 app.use('/api', require('./routes/guest'))
 app.use('/api/reservations', require('./routes/tables'));
 app.use('/api', require('./routes/tables'));
