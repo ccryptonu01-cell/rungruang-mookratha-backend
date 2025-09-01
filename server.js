@@ -116,6 +116,10 @@ app.use((req, res, next) => {
     return checkBlacklistedToken(req, res, next);
 });
 
+app.use('/api/admin', require('./routes/menu'));
+//app.use('/api/', require('./routes/menu'));
+
+app.use(express.json());
 // ===== Routes หลัก =====
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/payment', require('./routes/payment'));
@@ -126,13 +130,10 @@ const changePasswordRoutes = require('./routes/admin');
 app.use('/api/admin', changePasswordRoutes);
 app.use('/api/user', changePasswordRoutes);
 app.use('/api/cashier', changePasswordRoutes);
-app.use('/api/admin', require('./routes/menu'));
-
 app.use('/api', require('./routes/guest'))
 app.use('/api/reservations', require('./routes/tables'));
 app.use('/api', require('./routes/tables'));
 
-app.use(express.json());
 
 // โหลด routes อัตโนมัติ (ยกเว้น auth.js)
 readdirSync('./routes').forEach((file) => {
