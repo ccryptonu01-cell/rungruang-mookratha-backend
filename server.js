@@ -109,7 +109,9 @@ app.use((req, res, next) => {
     if (
         req.path.startsWith('/api/auth') ||
         req.path.startsWith('/api/tables') ||
-        req.path.startsWith('/api/guest') // ✅ เพิ่มบรรทัดนี้
+        req.path.startsWith('/api/guest') ||
+        req.path.startsWith('/api/g-menu') ||
+        req.path.startsWith('/api/g-category')
     ) {
         return next();
     }
