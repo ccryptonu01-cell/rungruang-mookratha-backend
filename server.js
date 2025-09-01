@@ -83,8 +83,6 @@ const morganStream = {
 
 app.use(morgan('combined', { stream: morganStream }));
 
-app.use(express.json());
-
 const ALLOWED_ORIGINS = [
     ...FRONTEND_PROD,
     FRONTEND_DEV,
@@ -134,9 +132,11 @@ app.use('/api', require('./routes/guest'))
 app.use('/api/reservations', require('./routes/tables'));
 app.use('/api', require('./routes/tables'));
 
+app.use(express.json());
+
 // โหลด routes อัตโนมัติ (ยกเว้น auth.js)
 readdirSync('./routes').forEach((file) => {
-    if (file !== 'auth.js') {
+    if (file !== 'auth.js' && file !== 'menu.js') {
         const route = require(`./routes/${file}`);
         app.use('/api', route);
     }
@@ -174,6 +174,8 @@ app.use((err, req, res, next) => {
         file: req.file,
     });
 });
+
+
 
 // ===== Start Server =====
 app.listen(port, () => {
