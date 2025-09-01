@@ -8,43 +8,68 @@ const validator = require("validator");
 
 
 exports.createMenu = async (req, res) => {
+
+    console.log("🔥🔥🔥 CreateMenu called");
+    console.log("📦 req.body:", req.body);
+    console.log("🖼 req.file:", req.file);
+
     try {
+        console.log("📥 req.body:", req.body);
+        console.log("🖼 req.file:", req.file);
+
         const name = xss(req.body.name);
         const description = xss(req.body.description || "");
         const price = validator.toFloat(xss(req.body.price));
         const categoryId = validator.toInt(xss(req.body.categoryId));
         const imageFile = req.file;
 
-        // ตรวจสอบข้อมูลที่จำเป็น
+        // ✅ ลองเพิ่ม log ตรงนี้
+        console.log("✅ Parsed:", { name, description, price, categoryId });
+
         if (!name || !price || !imageFile || !categoryId) {
+            console.warn("⚠️ ข้อมูลไม่ครบ", { name, price, imageFile, categoryId });
             return res.status(400).json({
                 message: "กรุณาระบุ name, price, รูปภาพ และหมวดหมู่ (categoryId)",
             });
         }
 
-        // แปลงและตรวจสอบราคา
         const parsedPrice = parseFloat(price);
+        const parsedCategoryId = parseInt(categoryId);
+
+        // ✅ log ช่วงแปลง
+        console.log("💵 price:", parsedPrice);
+        console.log("🏷️ categoryId:", parsedCategoryId);
+
         if (isNaN(parsedPrice) || parsedPrice <= 0) {
             return res.status(400).json({
                 message: "price ต้องเป็นตัวเลขและมากกว่า 0",
             });
         }
 
-        // แปลง categoryId ให้เป็น int
-        const parsedCategoryId = parseInt(categoryId);
         if (isNaN(parsedCategoryId)) {
             return res.status(400).json({ message: "categoryId ต้องเป็นตัวเลข" });
         }
 
-        // ตรวจสอบว่าหมวดหมู่มีอยู่จริง
+        // ✅ เช็คว่าหมวดหมู่เจอไหม
         const existingCategory = await prisma.category.findUnique({
             where: { id: parsedCategoryId },
         });
+
         if (!existingCategory) {
+            console.warn("❌ ไม่พบหมวดหมู่ ID:", parsedCategoryId);
             return res.status(404).json({ message: "ไม่พบหมวดหมู่ที่เลือก" });
         }
 
-        // บันทึกเมนู
+        // ✅ ตรวจ log ก่อน insert DB
+        console.log("📝 กำลังสร้างเมนู:", {
+            name,
+            price: parsedPrice,
+            description,
+            image: imageFile.path,
+            publicId: imageFile.filename,
+            categoryId: parsedCategoryId,
+        });
+
         const newMenu = await prisma.menu.create({
             data: {
                 name,
@@ -64,6 +89,7 @@ exports.createMenu = async (req, res) => {
         res.status(500).json({ message: "Server Error", error: err.message });
     }
 };
+
 
 exports.listMenu = async (req, res) => {
     try {
