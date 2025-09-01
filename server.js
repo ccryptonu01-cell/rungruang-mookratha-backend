@@ -144,16 +144,6 @@ readdirSync('./routes').forEach((file) => {
     }
 });
 
-// ===== React Build (Vite) =====
-const staticRoot = path.join(__dirname, '..', 'client', 'dist')
-console.log('Serving static from:', staticRoot);
-
-app.use(express.static(staticRoot));
-
-app.get('*', (req, res) => {
-    res.sendFile(path.join(staticRoot, 'index.html'));
-});
-
 // ===== Error Handler Logger =====
 app.use((err, req, res, next) => {
     console.error("🔥 Global Error:", {
