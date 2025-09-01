@@ -116,8 +116,7 @@ app.use((req, res, next) => {
     return checkBlacklistedToken(req, res, next);
 });
 
-app.use('/api/admin', require('./routes/menu'));
-//app.use('/api/', require('./routes/menu'));
+app.use('/api/', require('./routes/menu'));
 
 app.use(express.json());
 // ===== Routes หลัก =====
