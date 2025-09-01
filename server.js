@@ -154,8 +154,25 @@ app.get('*', (req, res) => {
 
 // ===== Error Handler Logger =====
 app.use((err, req, res, next) => {
-    logger.error(`${req.method} ${req.url} - ${err.message}`);
-    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
+    console.error("🔥 Global Error:", {
+        method: req.method,
+        url: req.url,
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+        body: req.body,
+        file: req.file,
+        cause: err.cause,
+    });
+
+    res.status(500).json({
+        message: "เกิดข้อผิดพลาดในระบบ",
+        error: err.message,
+        name: err.name,
+        stack: err.stack,
+        body: req.body,
+        file: req.file,
+    });
 });
 
 // ===== Start Server =====
