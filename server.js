@@ -20,9 +20,7 @@ const port = process.env.PORT || 5000;
 
 const FRONTEND_DEV = "http://localhost:5173"; // React dev server
 const FRONTEND_PROD = [
-    "https://rungruang-mookratha-frontend.vercel.app",
-    "https://rungruang-mookratha-frontend-git-main-rrmks-projects.vercel.app",
-    "https://rungruang-mookratha-frontend-pnhyfn7pw-rrmks-projects.vercel.app"
+    "https://rungruang-mookratha-frontend.vercel.app"
 ];
 const API_DEV = `http://localhost:${port}`;
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "dybgekx5y";
