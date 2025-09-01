@@ -6,7 +6,7 @@ const { createMenu, listMenu, updateMenu, deleteMenu } = require('../controllers
 const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware')
 
 router.get('/menu', listMenu)
-router.post("/admin/menu", verifyToken, verifyAdmin, upload.single("image"), createMenu)
+router.post("/menu", verifyToken, verifyAdmin, upload.single("image"), createMenu)
 router.put("/admin/menu/:id", verifyToken, verifyAdmin, upload.single("image"), updateMenu)
 router.delete('/admin/menu/:id', verifyToken, verifyAdmin, deleteMenu)
 
