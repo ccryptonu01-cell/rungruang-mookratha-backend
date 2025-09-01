@@ -85,9 +85,15 @@ exports.createMenu = async (req, res) => {
 
         res.status(201).json({ message: "เพิ่มเมนูสำเร็จ", menu: newMenu });
     } catch (err) {
-        console.error("❌ CreateMenu Error:", err);
-        res.status(500).json({ message: "Server Error", error: err.message });
+        res.status(500).json({
+            message: "เกิดข้อผิดพลาดใน server",
+            error: err.message,
+            stack: err.stack, // ✅ ส่ง stack trace มาเลย
+            body: req.body,   // ✅ เพิ่ม body ที่รับมา
+            file: req.file,   // ✅ เพิ่มข้อมูลไฟล์
+        });
     }
+
 };
 
 
