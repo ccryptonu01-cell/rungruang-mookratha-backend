@@ -116,9 +116,9 @@ app.use((req, res, next) => {
     return checkBlacklistedToken(req, res, next);
 });
 
-app.use('/api/', require('./routes/menu'));
-
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // ===== Routes หลัก =====
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/payment', require('./routes/payment'));
@@ -129,6 +129,8 @@ const changePasswordRoutes = require('./routes/admin');
 app.use('/api/admin', changePasswordRoutes);
 app.use('/api/user', changePasswordRoutes);
 app.use('/api/cashier', changePasswordRoutes);
+app.use('/api/', require('./routes/menu'));
+
 app.use('/api', require('./routes/guest'))
 app.use('/api/reservations', require('./routes/tables'));
 app.use('/api', require('./routes/tables'));
