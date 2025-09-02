@@ -28,4 +28,14 @@ router.get('/current-user', verifyToken, (req, res) => res.json({ user: req.user
 router.get('/current-admin', verifyToken, verifyAdmin, (req, res) => res.json({ user: req.user }));
 router.get('/current-cashier', verifyToken, verifyCashier, (req, res) => res.json({ user: req.user }));
 
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    res.json({ user: req.user });
+  } catch (err) {
+    console.error("❌ /me error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 module.exports = router;

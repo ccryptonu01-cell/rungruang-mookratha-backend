@@ -309,32 +309,20 @@ exports.getOrdersCashier = async (req, res) => {
                     },
                 },
             },
-            select: {
-                id: true,
-                createdAt: true,
-                totalPrice: true,
-                paymentStatus: true,
-                paymentMethod: true,
-                slipUrl: true,
-            },
             orderBy: {
-                createdAt: 'desc',
+                createdAt: "desc",
             },
             take: 100,
         });
 
-        const ordersWithLabels = orders.map(order => ({
-            ...order,
-            statusLabel: StatusLabels?.[order.paymentStatus] || order.paymentStatus,
-        }));
-
-        res.status(200).json({ orders: ordersWithLabels });
+        res.status(200).json({ orders });
 
     } catch (error) {
         console.error("❌ Error fetching orders (Cashier):", error);
         res.status(500).json({ message: "เกิดข้อผิดพลาดขณะดึงข้อมูลออเดอร์" });
     }
 };
+
 
 exports.updateOrderStatusCashier = async (req, res) => {
     try {
