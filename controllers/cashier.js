@@ -292,28 +292,52 @@ exports.addItemOrderCashier = async (req, res) => {
 exports.getOrdersCashier = async (req, res) => {
     try {
         const orders = await prisma.order.findMany({
-            select: {
-                id: true,
-                createdAt: true,
-                totalPrice: true,
-                paymentStatus: true,
-                paymentMethod: true,
-                tableId: true,
+            include: {
                 table: {
                     select: {
                         tableNumber: true,
+                    },
+                },
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        email: true,
+                    },
+                },
+                orderItems: {
+                    select: {
+                        quantity: true,
+                        price: true,
+                        menu: {
+                            select: {
+                                name: true,
+                                price: true,
+                            },
+                        },
+                    },
+                },
+                paymentSlip: {
+                    select: {
+                        url: true,
                     },
                 },
             },
             orderBy: {
                 createdAt: 'desc',
             },
-            take: 100
+            take: 100,
         });
 
-        res.status(200).json({ orders });
+        const ordersWithLabels = orders.map(order => ({
+            ...order,
+            statusLabel: StatusLabels?.[order.paymentStatus] || order.paymentStatus,
+        }));
+
+        res.status(200).json({ orders: ordersWithLabels });
+
     } catch (error) {
-        console.error("❌ Error fetching orders:", error);
+        console.error("❌ Error fetching orders (Cashier):", error);
         res.status(500).json({ message: "เกิดข้อผิดพลาดขณะดึงข้อมูลออเดอร์" });
     }
 };
