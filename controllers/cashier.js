@@ -294,34 +294,28 @@ exports.getOrdersCashier = async (req, res) => {
         const orders = await prisma.order.findMany({
             include: {
                 table: {
-                    select: {
-                        tableNumber: true,
-                    },
+                    select: { tableNumber: true },
                 },
                 user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        email: true,
-                    },
+                    select: { id: true, username: true, email: true },
                 },
                 orderItems: {
                     select: {
                         quantity: true,
                         price: true,
                         menu: {
-                            select: {
-                                name: true,
-                                price: true,
-                            },
+                            select: { name: true, price: true },
                         },
                     },
                 },
-                paymentSlip: {
-                    select: {
-                        url: true,
-                    },
-                },
+            },
+            select: {
+                id: true,
+                createdAt: true,
+                totalPrice: true,
+                paymentStatus: true,
+                paymentMethod: true,
+                slipUrl: true,
             },
             orderBy: {
                 createdAt: 'desc',
