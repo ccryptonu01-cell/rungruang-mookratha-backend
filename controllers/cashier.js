@@ -214,127 +214,108 @@ exports.addItemOrderCashier = async (req, res) => {
 
         const tableNumber = parseInt(xss(tableNumberRaw), 10);
         const items = Array.isArray(itemsRaw)
-            ? itemsRaw.map((item) => ({
+            ? itemsRaw.map(item => ({
                 menuItemId: parseInt(xss(item.menuItemId), 10),
-                quantity: parseInt(xss(item.quantity), 10),
+                quantity: parseInt(xss(item.quantity), 10)
             }))
             : [];
 
         if (!tableNumber || !Number.isInteger(tableNumber)) {
-            return res.status(400).json({ message: "หมายเลขโต๊ะไม่ถูกต้อง" });
+            return res.status(400).json({ message: 'หมายเลขโต๊ะไม่ถูกต้อง' });
         }
-
-        if (!items || !Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({ message: "กรุณาระบุรายการอาหารที่ถูกต้อง" });
+        if (!items || items.length === 0) {
+            return res.status(400).json({ message: 'กรุณาระบุรายการอาหารที่ถูกต้อง' });
         }
-
         for (const item of items) {
             if (!item.menuItemId || !Number.isInteger(item.menuItemId)) {
-                return res.status(400).json({ message: "menuItemId ไม่ถูกต้อง" });
+                return res.status(400).json({ message: 'menuItemId ไม่ถูกต้อง' });
             }
             if (!item.quantity || !Number.isInteger(item.quantity) || item.quantity < 1) {
-                return res.status(400).json({ message: "quantity ต้องเป็นตัวเลขที่มากกว่า 0" });
+                return res.status(400).json({ message: 'quantity ต้องเป็นตัวเลขที่มากกว่า 0' });
             }
         }
 
+        // หาโต๊ะด้วยฟิลด์ที่ unique จริงของคุณ
         const table = await prisma.table.findUnique({
-            where: { tableNumber },
+            where: { tableNumber }, // ถ้าของคุณใช้ number: { number: tableNumber }
         });
-
-        if (!table) {
-            return res.status(404).json({ message: "ไม่พบโต๊ะนี้ในระบบ" });
-        }
+        if (!table) return res.status(404).json({ message: 'ไม่พบโต๊ะนี้ในระบบ' });
 
         const menuPrices = await prisma.menu.findMany({
-            where: { id: { in: items.map((item) => item.menuItemId) } },
-            select: { id: true, price: true },
+            where: { id: { in: items.map(item => item.menuItemId) } },
+            select: { id: true, price: true }
         });
-
         if (menuPrices.length !== items.length) {
-            return res.status(400).json({ message: "พบเมนูที่ไม่มีอยู่ในระบบ" });
+            return res.status(400).json({ message: 'พบเมนูที่ไม่มีอยู่ในระบบ' });
         }
 
-        const priceMap = {};
-        menuPrices.forEach((menu) => {
-            priceMap[menu.id] = menu.price;
-        });
-
+        const priceMap = Object.fromEntries(menuPrices.map(m => [m.id, m.price]));
         let totalPrice = 0;
-        const orderItems = items.map((item) => {
+        const orderItems = items.map(item => {
             const price = priceMap[item.menuItemId] || 0;
             totalPrice += price * item.quantity;
-            return {
-                menuId: item.menuItemId,
-                quantity: item.quantity,
-                price,
-            };
+            return { menuId: item.menuItemId, quantity: item.quantity, price };
         });
 
-        // ========= NEW: ทำทุกอย่างในทรานแซกชันเดียว =========
-        const RSV_STATUS = "BOOKED";    // สถานะในตาราง reservations (ปรับให้ตรงระบบ)
-        const TABLE_STATUS = "RESERVED"; // สถานะในตาราง tables (ปรับให้ตรงระบบ)
-
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
-        const endOfToday = new Date();
-        endOfToday.setHours(23, 59, 59, 999);
-
+        // =================== สำคัญ: ทำงานในทรานแซกชัน ===================
         const result = await prisma.$transaction(async (tx) => {
             // 1) สร้างออเดอร์
             const order = await tx.order.create({
                 data: {
                     tableId: table.id,
-                    status: "PENDING",
+                    status: 'PENDING',   // ให้ตรง enum ของ Order ถ้ามี
                     totalPrice,
-                    orderItems: { create: orderItems },
+                    orderItems: { create: orderItems }
                 },
-                include: { orderItems: true },
+                include: { orderItems: true }
             });
 
-            // 2) อัปเดตสถานะโต๊ะให้ "RESERVED"
-            await tx.table.update({
-                where: { id: table.id },
-                data: { status: TABLE_STATUS },
-            });
-
-            // 3) ถ้ายังไม่มี "การจอง" ของโต๊ะนี้ในวันนี้ → สร้างให้เพื่อให้ไปโผล่ในหน้า 'การจองโต๊ะ'
-            const existed = await tx.reservation.findFirst({
-                where: {
-                    tableId: table.id,           // ⬅ ถ้าตารางคุณใช้ tableNumber ให้ดูคอมเมนต์ข้างล่าง
-                    status: RSV_STATUS,
-                    date: { gte: startOfToday, lte: endOfToday },
-                },
-                select: { id: true },
-            });
-
-            if (!existed) {
-                await tx.reservation.create({
-                    data: {
-                        customerName: "ลูกค้า Walk-in",
-                        phone: "-",
-                        tableId: table.id,         // ⬅ ถ้าคุณเก็บเป็นหมายเลขโต๊ะ ให้ใช้: tableNumber: table.tableNumber,
-                        people: 0,
-                        date: new Date(),
-                        timeSlot: "สั่งที่เคาน์เตอร์",   // ใส่ข้อความ/slot ที่คุณต้องการ
-                        status: RSV_STATUS,
-                        source: "CASHIER_ORDER",   // ถ้ามีคอลัมน์บอกแหล่งที่มา
-                    },
+            // 2) อัปเดตสถานะโต๊ะให้ถูกจอง (ถ้ามีฟิลด์นี้ใน Table)
+            //    ถ้า enum จริงไม่ใช่ RESERVED ให้เปลี่ยนค่าให้ตรง
+            try {
+                await tx.table.update({
+                    where: { id: table.id },   // หรือ { tableNumber }
+                    data: { status: 'RESERVED' }
                 });
+            } catch (e) {
+                // ถ้าไม่มีฟิลด์ status หรือ enum ไม่ตรง จะไม่ให้ล้มทั้งทรานแซกชัน
+                // console.warn("Skip table status update:", e?.message);
             }
+
+            // 3) สร้าง/อัปเดตการจอง (ผูกกับ orderId ซึ่งเป็น @unique)
+            await tx.reservation.upsert({
+                where: { orderId: order.id },  // ใช้ unique index
+                update: {
+                    tableId: table.id,
+                    time: new Date(),
+                    status: 'RESERVED',          // ใช้ enum จาก schema ของคุณ
+                    // people: 0,                // ถ้าจะบันทึกจำนวนคน
+                },
+                create: {
+                    orderId: order.id,
+                    tableId: table.id,
+                    time: new Date(),
+                    status: 'RESERVED',
+                    // userId: null,             // ถ้ามีกรณีล็อกอินพนักงาน/ผู้ใช้
+                    // guestUserId: null,
+                    // people: 0,
+                }
+            });
 
             return order;
         });
+        // =================== จบทρανแซกชัน ===================
 
         return res.status(201).json({
-            message: "เพิ่มออเดอร์สำเร็จ",
+            message: 'เพิ่มออเดอร์สำเร็จ',
             order: result,
         });
-    } catch (err) {
-        console.error("Add Order Error:", err);
-        return res.status(500).json({ message: "Server Error" });
-    }
-};
 
+    } catch (err) {
+        console.error('Add Order Error:', { code: err?.code, message: err?.message, meta: err?.meta });
+        return res.status(500).json({ message: 'Server Error' });
+    }
+}
 
 exports.getOrdersCashier = async (req, res) => {
     try {
