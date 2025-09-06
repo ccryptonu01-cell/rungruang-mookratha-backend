@@ -213,25 +213,27 @@ exports.addItemOrderCashier = async (req, res) => {
         const itemsRaw = req.body.items;
 
         const tableNumber = parseInt(xss(tableNumberRaw), 10);
-        const items = Array.isArray(itemsRaw) ? itemsRaw.map(item => ({
-            menuItemId: parseInt(xss(item.menuItemId), 10),
-            quantity: parseInt(xss(item.quantity), 10)
-        })) : [];
+        const items = Array.isArray(itemsRaw)
+            ? itemsRaw.map((item) => ({
+                menuItemId: parseInt(xss(item.menuItemId), 10),
+                quantity: parseInt(xss(item.quantity), 10),
+            }))
+            : [];
 
         if (!tableNumber || !Number.isInteger(tableNumber)) {
-            return res.status(400).json({ message: 'หมายเลขโต๊ะไม่ถูกต้อง' });
+            return res.status(400).json({ message: "หมายเลขโต๊ะไม่ถูกต้อง" });
         }
 
         if (!items || !Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({ message: 'กรุณาระบุรายการอาหารที่ถูกต้อง' });
+            return res.status(400).json({ message: "กรุณาระบุรายการอาหารที่ถูกต้อง" });
         }
 
         for (const item of items) {
             if (!item.menuItemId || !Number.isInteger(item.menuItemId)) {
-                return res.status(400).json({ message: 'menuItemId ไม่ถูกต้อง' });
+                return res.status(400).json({ message: "menuItemId ไม่ถูกต้อง" });
             }
             if (!item.quantity || !Number.isInteger(item.quantity) || item.quantity < 1) {
-                return res.status(400).json({ message: 'quantity ต้องเป็นตัวเลขที่มากกว่า 0' });
+                return res.status(400).json({ message: "quantity ต้องเป็นตัวเลขที่มากกว่า 0" });
             }
         }
 
@@ -240,25 +242,25 @@ exports.addItemOrderCashier = async (req, res) => {
         });
 
         if (!table) {
-            return res.status(404).json({ message: 'ไม่พบโต๊ะนี้ในระบบ' });
+            return res.status(404).json({ message: "ไม่พบโต๊ะนี้ในระบบ" });
         }
 
         const menuPrices = await prisma.menu.findMany({
-            where: { id: { in: items.map(item => item.menuItemId) } },
-            select: { id: true, price: true }
+            where: { id: { in: items.map((item) => item.menuItemId) } },
+            select: { id: true, price: true },
         });
 
         if (menuPrices.length !== items.length) {
-            return res.status(400).json({ message: 'พบเมนูที่ไม่มีอยู่ในระบบ' });
+            return res.status(400).json({ message: "พบเมนูที่ไม่มีอยู่ในระบบ" });
         }
 
         const priceMap = {};
-        menuPrices.forEach(menu => {
+        menuPrices.forEach((menu) => {
             priceMap[menu.id] = menu.price;
         });
 
         let totalPrice = 0;
-        const orderItems = items.map(item => {
+        const orderItems = items.map((item) => {
             const price = priceMap[item.menuItemId] || 0;
             totalPrice += price * item.quantity;
             return {
@@ -268,26 +270,71 @@ exports.addItemOrderCashier = async (req, res) => {
             };
         });
 
-        const order = await prisma.order.create({
-            data: {
-                tableId: table.id,
-                status: "PENDING",
-                totalPrice,
-                orderItems: { create: orderItems }
-            },
-            include: { orderItems: true }
+        // ========= NEW: ทำทุกอย่างในทรานแซกชันเดียว =========
+        const RSV_STATUS = "BOOKED";    // สถานะในตาราง reservations (ปรับให้ตรงระบบ)
+        const TABLE_STATUS = "RESERVED"; // สถานะในตาราง tables (ปรับให้ตรงระบบ)
+
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
+        const result = await prisma.$transaction(async (tx) => {
+            // 1) สร้างออเดอร์
+            const order = await tx.order.create({
+                data: {
+                    tableId: table.id,
+                    status: "PENDING",
+                    totalPrice,
+                    orderItems: { create: orderItems },
+                },
+                include: { orderItems: true },
+            });
+
+            // 2) อัปเดตสถานะโต๊ะให้ "RESERVED"
+            await tx.table.update({
+                where: { id: table.id },
+                data: { status: TABLE_STATUS },
+            });
+
+            // 3) ถ้ายังไม่มี "การจอง" ของโต๊ะนี้ในวันนี้ → สร้างให้เพื่อให้ไปโผล่ในหน้า 'การจองโต๊ะ'
+            const existed = await tx.reservation.findFirst({
+                where: {
+                    tableId: table.id,           // ⬅ ถ้าตารางคุณใช้ tableNumber ให้ดูคอมเมนต์ข้างล่าง
+                    status: RSV_STATUS,
+                    date: { gte: startOfToday, lte: endOfToday },
+                },
+                select: { id: true },
+            });
+
+            if (!existed) {
+                await tx.reservation.create({
+                    data: {
+                        customerName: "ลูกค้า Walk-in",
+                        phone: "-",
+                        tableId: table.id,         // ⬅ ถ้าคุณเก็บเป็นหมายเลขโต๊ะ ให้ใช้: tableNumber: table.tableNumber,
+                        people: 0,
+                        date: new Date(),
+                        timeSlot: "สั่งที่เคาน์เตอร์",   // ใส่ข้อความ/slot ที่คุณต้องการ
+                        status: RSV_STATUS,
+                        source: "CASHIER_ORDER",   // ถ้ามีคอลัมน์บอกแหล่งที่มา
+                    },
+                });
+            }
+
+            return order;
         });
 
-        res.status(201).json({
-            message: 'เพิ่มออเดอร์สำเร็จ',
-            order,
+        return res.status(201).json({
+            message: "เพิ่มออเดอร์สำเร็จ",
+            order: result,
         });
-
     } catch (err) {
-        console.error('Add Order Error:', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Add Order Error:", err);
+        return res.status(500).json({ message: "Server Error" });
     }
 };
+
 
 exports.getOrdersCashier = async (req, res) => {
     try {
