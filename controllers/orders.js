@@ -21,44 +21,38 @@ exports.addItemOrder = async (req, res) => {
         const sanitizedSlipUrl = req.body.slipUrl ? xss(req.body.slipUrl) : null;
 
         const items = Array.isArray(req.body.items)
-            ? req.body.items.map(item => ({
+            ? req.body.items.map((item) => ({
                 id: validator.toInt(xss(item.id)),
-                qty: validator.toInt(xss(item.qty))
+                qty: validator.toInt(xss(item.qty)),
             }))
             : [];
 
         if (!sanitizedTableNumber || items.length === 0 || !sanitizedMethod || !sanitizedStatus) {
-            return res.status(400).json({ message: 'ข้อมูลไม่ครบถ้วน' });
+            return res.status(400).json({ message: "ข้อมูลไม่ครบถ้วน" });
         }
 
         const table = await prisma.table.findUnique({
             where: { tableNumber: sanitizedTableNumber },
         });
-
-        if (!table) {
-            return res.status(404).json({ message: 'ไม่พบโต๊ะนี้ในระบบ' });
-        }
+        if (!table) return res.status(404).json({ message: "ไม่พบโต๊ะนี้ในระบบ" });
 
         const menuPrices = await prisma.menu.findMany({
-            where: { id: { in: items.map(item => item.id) } },
-            select: { id: true, price: true }
+            where: { id: { in: items.map((item) => item.id) } },
+            select: { id: true, price: true },
         });
-
         if (menuPrices.length !== items.length) {
-            return res.status(400).json({ message: 'พบเมนูที่ไม่มีอยู่ในระบบ' });
+            return res.status(400).json({ message: "พบเมนูที่ไม่มีอยู่ในระบบ" });
         }
 
         const priceMap = {};
-        menuPrices.forEach(menu => {
+        menuPrices.forEach((menu) => {
             priceMap[menu.id] = parseFloat(menu.price);
         });
 
         let totalPrice = 0;
-        const orderItems = items.map(item => {
+        const orderItems = items.map((item) => {
             const price = priceMap[item.id] || 0;
-            const subtotal = price * item.qty;
-            totalPrice += subtotal;
-
+            totalPrice += price * item.qty;
             return {
                 menuId: item.id,
                 quantity: item.qty,
@@ -66,35 +60,64 @@ exports.addItemOrder = async (req, res) => {
             };
         });
 
-        const order = await prisma.order.create({
-            data: {
-                user: {
-                    connect: { id: req.user.id }
+        // ทำทั้งหมดในทรานแซกชัน: สร้างออเดอร์ → อัปเดตโต๊ะ → upsert การจอง
+        const order = await prisma.$transaction(async (tx) => {
+            // 1) สร้างออเดอร์
+            const created = await tx.order.create({
+                data: {
+                    user: { connect: { id: req.user.id } },
+                    table: { connect: { id: table.id } },
+                    paymentMethod: sanitizedMethod,
+                    paymentStatus: sanitizedStatus,
+                    slipUrl: sanitizedSlipUrl,
+                    totalPrice: new Prisma.Decimal(totalPrice),
+                    orderItems: { create: orderItems },
                 },
-                table: {
-                    connect: { id: table.id }
-                },
-                paymentMethod: sanitizedMethod,
-                paymentStatus: sanitizedStatus,
-                slipUrl: sanitizedSlipUrl,
-                totalPrice: new Prisma.Decimal(totalPrice),
-                orderItems: {
-                    create: orderItems
-                }
-            },
-            include: {
-                orderItems: true
+                include: { orderItems: true },
+            });
+
+            // 2) อัปเดตสถานะโต๊ะ (ถ้ามีฟิลด์ status)
+            try {
+                await tx.table.update({
+                    where: { id: table.id },
+                    data: { status: "RESERVED" }, // ปรับค่าตาม enum ของ Table ถ้าชื่อไม่ตรง
+                });
+            } catch (e) {
+                // ไม่มีฟิลด์/enum ไม่ตรง -> ข้ามโดยไม่ให้ทรานแซกชันล้ม
             }
+
+            // 3) สร้าง/อัปเดตการจองให้ไปโผล่หน้า "การจองโต๊ะ"
+            await tx.reservation.upsert({
+                where: { orderId: created.id }, // orderId เป็น @unique ในสคีมาของคุณ
+                update: {
+                    tableId: table.id,
+                    time: new Date(),      // model Reservation ใช้ฟิลด์ time (DateTime)
+                    status: "RESERVED",    // ReservationStatus: PENDING | RESERVED | CONFIRMED | CANCELLED
+                    // people: 0,           // ใส่ได้ถ้าต้องการ
+                    // userId: req.user.id, // ถ้าต้องการผูกผู้ใช้
+                },
+                create: {
+                    orderId: created.id,
+                    tableId: table.id,
+                    time: new Date(),
+                    status: "RESERVED",
+                    // people: 0,
+                    // userId: req.user.id,
+                },
+            });
+
+            return created;
         });
 
         return res.status(201).json({
-            message: 'เพิ่มออเดอร์สำเร็จ',
+            message: "เพิ่มออเดอร์สำเร็จ",
             order,
         });
-
     } catch (err) {
-        console.error('Add Order Error:', err);
-        return res.status(500).json({ message: 'เกิดข้อผิดพลาดในเซิร์ฟเวอร์', error: err.message });
+        console.error("Add Order Error:", { code: err?.code, message: err?.message, meta: err?.meta });
+        return res
+            .status(500)
+            .json({ message: "เกิดข้อผิดพลาดในเซิร์ฟเวอร์", error: err.message });
     }
 };
 
