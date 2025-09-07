@@ -114,7 +114,7 @@ model OrderItem {
   id       Int     @id @default(autoincrement())
   orderId  Int
   menuId   Int?
-  name     String 
+  name     String @default("")
   quantity Int
   price    Decimal
 
