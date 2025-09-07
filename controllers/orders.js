@@ -253,19 +253,7 @@ exports.updateOrderDetail = async (req, res) => {
 
         const totalPrice = parseFloat(xss(rawTotalPrice));
 
-        if (
-            orderItems.some(
-                i =>
-                    isNaN(i.menuId) ||
-                    isNaN(i.qty) ||
-                    isNaN(i.price) ||
-                    i.qty < 1 ||
-                    i.menuId <= 0 ||
-                    i.price < 0
-            ) ||
-            isNaN(totalPrice) ||
-            totalPrice < 0
-        ) {
+        if (orderItems.some(i => isNaN(i.menuId) || isNaN(i.qty) || isNaN(i.price)) || isNaN(totalPrice)) {
             return res.status(400).json({ message: "ข้อมูลไม่ถูกต้อง" });
         }
 
