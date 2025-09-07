@@ -245,26 +245,31 @@ exports.updateOrderDetail = async (req, res) => {
         }
 
         const items = rawItems.map((item, idx) => {
-            const menuId = validator.toInt(xss(item.menuId));
+            const menuIdRaw = xss(item.menuId);
+            const menuId = menuIdRaw !== null && menuIdRaw !== undefined && menuIdRaw !== ''
+                ? validator.toInt(menuIdRaw)
+                : null;
+
             const qty = validator.toInt(xss(item.qty));
             const price = parseFloat(xss(item.price));
+            const name = xss(item.name || "").trim();
 
-            if (!Number.isInteger(menuId) || menuId <= 0 ||
-                !Number.isInteger(qty) || qty <= 0 ||
-                Number.isNaN(price) || price < 0) {
-                throw { code: 400, message: `แถวที่ ${idx + 1} ข้อมูลไม่ถูกต้อง` };
+            if ((!menuId || menuId <= 0) && name === "") {
+                throw { code: 400, message: `แถวที่ ${idx + 1} ไม่มีชื่อเมนู และ menuId ไม่ถูกต้อง` };
             }
-            return { menuId, qty, price };
+
+            if (!Number.isInteger(qty) || qty <= 0 || Number.isNaN(price) || price < 0) {
+                throw { code: 400, message: `แถวที่ ${idx + 1} ข้อมูลจำนวนหรือราคาผิด` };
+            }
+
+            return { menuId: menuId > 0 ? menuId : null, name, qty, price };
         });
 
-        // ตรวจว่า order มีอยู่
         const order = await prisma.order.findUnique({ where: { id } });
         if (!order) return res.status(404).json({ message: "ไม่พบคำสั่งซื้อ" });
 
-        // คำนวณ total จากรายการ เพื่อความถูกต้อง
         const totalPrice = items.reduce((s, it) => s + it.qty * it.price, 0);
 
-        // ทำให้เป็นธุรกรรมเดียว
         const result = await prisma.$transaction(async (tx) => {
             await tx.orderItem.deleteMany({ where: { orderId: id } });
 
@@ -272,6 +277,7 @@ exports.updateOrderDetail = async (req, res) => {
                 data: items.map(it => ({
                     orderId: id,
                     menuId: it.menuId,
+                    name: it.name,
                     quantity: it.qty,
                     price: it.price,
                 })),
@@ -294,7 +300,6 @@ exports.updateOrderDetail = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
-
 
 exports.cancelOrder = async (req, res) => {
     try {

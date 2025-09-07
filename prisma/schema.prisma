@@ -113,12 +113,13 @@ enum OrderStatus {
 model OrderItem {
   id       Int     @id @default(autoincrement())
   orderId  Int
-  menuId   Int
+  menuId   Int?
+  name     String 
   quantity Int
   price    Decimal
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menu  Menu  @relation(fields: [menuId], references: [id])
+  menu  Menu?  @relation(fields: [menuId], references: [id])
 }
 
 model OrderHistory {
