@@ -239,55 +239,62 @@ exports.updateOrderDetail = async (req, res) => {
     try {
         const id = validator.toInt(xss(req.params.id));
         const rawItems = req.body.orderItems;
-        const rawTotalPrice = req.body.totalPrice;
 
-        if (!Array.isArray(rawItems) || rawTotalPrice == null) {
+        if (!Array.isArray(rawItems) || rawItems.length === 0) {
             return res.status(400).json({ message: "ข้อมูลไม่ครบ" });
         }
 
-        const orderItems = rawItems.map(item => ({
-            menuId: validator.toInt(xss(item.menuId)),
-            qty: validator.toInt(xss(item.qty)),
-            price: parseFloat(xss(item.price)),
-        }));
+        const items = rawItems.map((item, idx) => {
+            const menuId = validator.toInt(xss(item.menuId));
+            const qty = validator.toInt(xss(item.qty));
+            const price = parseFloat(xss(item.price));
 
-        const totalPrice = parseFloat(xss(rawTotalPrice));
+            if (!Number.isInteger(menuId) || menuId <= 0 ||
+                !Number.isInteger(qty) || qty <= 0 ||
+                Number.isNaN(price) || price < 0) {
+                throw { code: 400, message: `แถวที่ ${idx + 1} ข้อมูลไม่ถูกต้อง` };
+            }
+            return { menuId, qty, price };
+        });
 
-        if (orderItems.some(i => isNaN(i.menuId) || isNaN(i.qty) || isNaN(i.price)) || isNaN(totalPrice)) {
-            return res.status(400).json({ message: "ข้อมูลไม่ถูกต้อง" });
-        }
-
-        // ตรวจสอบว่า order มีอยู่จริง
+        // ตรวจว่า order มีอยู่
         const order = await prisma.order.findUnique({ where: { id } });
-        if (!order) {
-            return res.status(404).json({ message: "ไม่พบคำสั่งซื้อ" });
-        }
+        if (!order) return res.status(404).json({ message: "ไม่พบคำสั่งซื้อ" });
 
-        // ลบรายการเดิมก่อน
-        await prisma.orderItem.deleteMany({ where: { orderId: id } });
+        // คำนวณ total จากรายการ เพื่อความถูกต้อง
+        const totalPrice = items.reduce((s, it) => s + it.qty * it.price, 0);
 
-        // เพิ่มรายการใหม่
-        const createdItems = await prisma.orderItem.createMany({
-            data: orderItems.map(item => ({
-                orderId: id,
-                menuId: item.menuId,
-                quantity: item.qty,
-                price: item.price
-            }))
+        // ทำให้เป็นธุรกรรมเดียว
+        const result = await prisma.$transaction(async (tx) => {
+            await tx.orderItem.deleteMany({ where: { orderId: id } });
+
+            const created = await tx.orderItem.createMany({
+                data: items.map(it => ({
+                    orderId: id,
+                    menuId: it.menuId,
+                    quantity: it.qty,
+                    price: it.price,
+                })),
+            });
+
+            const updatedOrder = await tx.order.update({
+                where: { id },
+                data: { totalPrice },
+            });
+
+            return { created, updatedOrder };
         });
 
-        // อัปเดตราคารวม
-        const updatedOrder = await prisma.order.update({
-            where: { id },
-            data: { totalPrice }
-        });
-
-        res.status(200).json({ message: "อัปเดตเมนูสำเร็จ", updatedOrder, createdItems });
+        res.status(200).json({ message: "อัปเดตเมนูสำเร็จ", ...result });
     } catch (err) {
+        if (err?.code === 400) {
+            return res.status(400).json({ message: err.message });
+        }
         console.error("Update Order Error:", err);
         res.status(500).json({ message: "Server Error" });
     }
-}
+};
+
 
 exports.cancelOrder = async (req, res) => {
     try {
