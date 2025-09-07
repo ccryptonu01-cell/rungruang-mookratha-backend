@@ -241,7 +241,7 @@ exports.updateOrderDetail = async (req, res) => {
         const rawItems = req.body.orderItems;
         const rawTotalPrice = req.body.totalPrice;
 
-        if (!rawItems || !Array.isArray(rawItems) || !rawTotalPrice) {
+        if (!Array.isArray(rawItems) || rawTotalPrice == null) {
             return res.status(400).json({ message: "ข้อมูลไม่ครบ" });
         }
 
